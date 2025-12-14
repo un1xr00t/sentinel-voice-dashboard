@@ -1,0 +1,2141 @@
+{
+  "name": "SENTINEL - Enterprise Threat Intelligence Platform",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 🛡️ SENTINEL - Enterprise Threat Intelligence Platform\n\n**What this workflow does:**\n- Aggregates 40+ threat intel sources (RSS, APIs, CVE feeds)\n- Extracts CVEs, IOCs, threat actors automatically\n- Enriches with NVD (CVSS) and EPSS (exploit probability)\n- AI-powered analysis via Claude API\n- Smart scoring to prioritize real threats\n- Alerts to Discord with full context\n\n**Setup Required:**\n1. Anthropic API key (for AI analysis)\n2. Discord webhooks (critical + general channels)\n3. Baserow table (for deduplication)\n\n**Cost:** ~$5-20/month for AI, everything else free",
+        "height": 508,
+        "width": 398,
+        "color": 5
+      },
+      "id": "87102542-e73e-4f1b-9980-eac6aca4280b",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -5232,
+        -2928
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🔴 CRITICAL SOURCES (Every 15 min)\n\n**Government & Official:**\n- CISA Advisories & News\n- US-CERT Alerts\n- CISA KEV (Known Exploited Vulns)\n\n**CVE & Exploits:**\n- CVE Feed (Critical + High severity)\n- Exploit-DB\n- NVD API\n\n**Vendor Security:**\n- Microsoft MSRC\n- Google Project Zero\n- Cisco PSIRT\n- VMware Security\n\n**Threat Intel APIs:**\n- ThreatFox IOCs\n- Ransomware.live victims\n\n⚡ These are checked most frequently because they report actively exploited vulnerabilities",
+        "height": 476,
+        "width": 336,
+        "color": 2
+      },
+      "id": "94e32f48-963a-4b49-a4d4-ecf405512ab2",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -4752,
+        -2576
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🟠 HIGH PRIORITY NEWS (Every hour)\n\n**Security News Outlets:**\n- The Hacker News\n- BleepingComputer\n- Krebs on Security\n- Dark Reading\n- Security Week\n- Threatpost\n\n**Research:**\n- SANS ISC\n- Schneier on Security\n\n📰 Breaking news and analysis from trusted security journalists",
+        "height": 412,
+        "width": 296,
+        "color": 6
+      },
+      "id": "361a7845-4b7f-4811-9b49-1181576dd843",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -4736,
+        -1808
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🔵 GENERAL INTEL (Every 4 hours)\n\n**Vendor Research Blogs:**\n- CrowdStrike\n- Mandiant\n- Kaspersky (Securelist)\n- Unit 42 (Palo Alto)\n- SentinelOne Labs\n- ESET (WeLiveSecurity)\n- Cisco Talos\n- Fortinet\n- Proofpoint\n\n**Community:**\n- Reddit r/netsec\n- Reddit r/cybersecurity\n- Recorded Future Blog\n\n🔬 Deep-dive research and threat reports",
+        "height": 508,
+        "width": 312,
+        "color": 3
+      },
+      "id": "fec11d24-70f1-49e6-9f20-5d9ffc2b5030",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -4624,
+        -960
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🔄 PROCESSING PIPELINE\n\n**Step 1: Normalize**\nStandardize all sources to common format\n\n**Step 2: Extract Entities**\n- CVE IDs (CVE-XXXX-XXXXX)\n- IOCs (IPs, domains, hashes)\n- MITRE ATT&CK techniques\n- Threat actor names\n\n**Step 3: Smart Scoring**\nNot just keywords! Score based on:\n- Keyword severity (+3 to +20 pts)\n- Source credibility (+5 to +15 pts)\n- CVE presence (+5 pts each)\n- CISA KEV status (+50 pts!)\n- Recency (+4 to +10 pts)\n\n**Step 4: Deduplicate**\nCheck against Baserow DB to avoid spam",
+        "height": 548,
+        "width": 300,
+        "color": 4
+      },
+      "id": "73894915-df07-4116-8bb7-681e95065c78",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2864,
+        -1488
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 📊 CVE ENRICHMENT\n\n**NVD Lookup:**\n- CVSS score (0-10 severity)\n- CVSS vector (attack complexity)\n- CWE weakness type\n- Official description\n\n**EPSS Lookup:**\n- Exploitation probability %\n- How likely to be exploited in next 30 days\n- Percentile ranking\n\n⚙️ **Add your NVD API key** in the NVD Lookup node URL (replace YOUR_NVD_API_KEY_HERE)\n\n💡 A CVE with CVSS 9.8 + EPSS 40% = definitely patch NOW",
+        "height": 520,
+        "width": 328,
+        "color": 4
+      },
+      "id": "d31d7308-22c4-4b2d-a18e-73b4d0032525",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1456,
+        -1504
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🚨 ALERT ROUTING\n\n**CRITICAL (score 80+):**\n→ #critical-alerts channel\n→ Full embed with all details\n→ CVSS, EPSS, actions, IOCs\n\n**HIGH/MEDIUM (score 25-79):**\n→ #security-news channel\n→ Condensed embed\n→ Key facts only\n\n**LOW (score <25):**\n→ Not sent (too noisy)\n\n📱 Configure Discord webhooks for each channel",
+        "height": 396,
+        "width": 308,
+        "color": 2
+      },
+      "id": "8c5c37b8-d33b-445c-9976-68ab62dc3ee0",
+      "name": "Sticky Note7",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -704,
+        -1360
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 📊 DAILY DIGEST (6 AM)\n\nSends a summary of the last 24 hours:\n- Total alerts processed\n- Count by priority level\n- Top sources\n- CVEs tracked\n\nGreat for morning briefings and exec reporting!",
+        "height": 280,
+        "width": 292,
+        "color": 3
+      },
+      "id": "fbfd105b-c4ac-47cc-a64f-c7ae93b85e2d",
+      "name": "Sticky Note8",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -4576,
+        -224
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🧹 CLEANUP (3 AM)\n\nDeletes fingerprints older than 7 days to:\n- Keep database small\n- Allow re-alerting on recurring threats\n- Maintain performance\n\nRuns automatically, no config needed.",
+        "height": 292,
+        "width": 262,
+        "color": 7
+      },
+      "id": "75b5c3da-b2cb-47c2-8884-5ae954905285",
+      "name": "Sticky Note9",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -4608,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## ⚙️ CONFIGURATION CHECKLIST\n\n**Required Credentials:**\n\n☐ **Anthropic API Key**\n   Create Header Auth credential\n   Name: `x-api-key`\n   Value: `sk-ant-api03-xxxxx`\n\n☐ **Discord Critical Webhook**\n   For #critical-alerts channel\n\n☐ **Discord Alerts Webhook**\n   For #security-news channel\n\n☐ **Discord Digest Webhook**\n   For daily summary (can reuse)\n\n☐ **NVD API Key**\n   Edit NVD Lookup node URL\n   Replace YOUR_NVD_API_KEY_HERE\n\n☐ **Baserow** (already configured)\n   Table needs: fingerprint, source,\n   priority, cve_ids columns",
+        "height": 544,
+        "width": 344,
+        "color": 5
+      },
+      "id": "e408651c-4544-4989-9103-8382a8e2d940",
+      "name": "Sticky Note10",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -5200,
+        -2384
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "4fcc1c25-8b58-4260-a0fe-1d0180b7c53c",
+      "name": "Every 15 Min (Critical)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -4224,
+        -2368
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "id": "7ad4a619-c8a7-4381-8fad-e99c5df30e7b",
+      "name": "Every Hour (High Priority)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -4224,
+        -1568
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 4
+            }
+          ]
+        }
+      },
+      "id": "5eb397b8-bf8b-4176-89e5-bac33e4a3c05",
+      "name": "Every 4 Hours (General)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -4224,
+        -768
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      "id": "29a58f90-2649-49a5-818c-d8b40c446243",
+      "name": "Daily Digest (6 AM)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -4224,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.cisa.gov/cybersecurity-advisories/all.xml",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "27f86411-61ae-4d33-9a59-1e7afddc8e9a",
+      "name": "CISA Advisories",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3920,
+        -2576
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.cisa.gov/news.xml",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "563a558d-57a4-4331-a856-661f880bb732",
+      "name": "CISA News",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3920,
+        -2448
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.us-cert.gov/ncas/alerts.xml",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "a4d61129-69ee-47e7-b6a8-9d14dde2a7c0",
+      "name": "US-CERT Alerts",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3920,
+        -2320
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.exploit-db.com/rss.xml",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "1dc7e2ef-277b-4fc5-bd19-096ff12a9f9b",
+      "name": "Exploit-DB",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3728,
+        -2576
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.msrc.microsoft.com/update-guide/rss",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "fe64e16a-4b0f-4a66-a6de-6f8f78a4fc8f",
+      "name": "Microsoft MSRC",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3728,
+        -2448
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://googleprojectzero.blogspot.com/feeds/posts/default?alt=rss",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "d5030002-242b-43e5-bd0a-d14ee5e8a7a9",
+      "name": "Google Project Zero",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3728,
+        -2320
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://tools.cisco.com/security/center/psirtrss20/CiscoSecurityAdvisory.xml",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "372055e0-403f-41fa-b361-fc8a3ed5655b",
+      "name": "Cisco PSIRT",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3728,
+        -2208
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://feeds.feedburner.com/TheHackersNews",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "dc70c324-418d-4a54-953d-14e078c1fc88",
+      "name": "The Hacker News",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3920,
+        -1760
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.bleepingcomputer.com/feed/",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "e9965627-05fc-498e-a483-097f818fb089",
+      "name": "BleepingComputer",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3920,
+        -1648
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://krebsonsecurity.com/feed/",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "39cd916d-8d6a-406d-8c6b-10326cd8ab00",
+      "name": "Krebs on Security",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3920,
+        -1520
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.darkreading.com/rss.xml",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "40d2b6d3-2830-4ce1-8d93-136b9da8e552",
+      "name": "Dark Reading",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3920,
+        -1408
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.securityweek.com/feed/",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "bbbd5b65-86b5-4fd6-88d6-625d611c0417",
+      "name": "Security Week",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3728,
+        -1760
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.schneier.com/feed/atom/",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "4c104725-2bfb-4f14-916a-6f70ef6c8b5d",
+      "name": "Schneier on Security",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3728,
+        -1648
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://isc.sans.edu/rssfeed.xml",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "67fc798a-1dfc-4cd8-bc43-b8b0f8c01bed",
+      "name": "SANS ISC",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3728,
+        -1520
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://threatpost.com/feed/",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "caed4960-2d5d-446f-8af6-ed85199252b5",
+      "name": "Threatpost",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3728,
+        -1408
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.reddit.com/r/netsec/.rss",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "bbf3906b-de1b-42bb-bf91-af3df8e35b5c",
+      "name": "Reddit r/netsec",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3920,
+        -960
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.reddit.com/r/cybersecurity/.rss",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "09edea2a-c0ce-4b15-bafe-70b5125a5275",
+      "name": "Reddit r/cybersecurity",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3920,
+        -848
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.recordedfuture.com/feed",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "9eb7be1f-83cd-4c44-854e-e26578a83b15",
+      "name": "Recorded Future Blog",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3920,
+        -720
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.crowdstrike.com/blog/feed/",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "283858c1-d061-4489-a79a-1400e7ba7159",
+      "name": "CrowdStrike Blog",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3920,
+        -608
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.mandiant.com/resources/blog/rss.xml",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "d637c0bc-504d-436a-ba64-0a83de48f678",
+      "name": "Mandiant Blog",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3728,
+        -960
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://securelist.com/feed/",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "252a5cc3-1d99-41b5-ad83-671f6cc4a73a",
+      "name": "Securelist (Kaspersky)",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3728,
+        -848
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://unit42.paloaltonetworks.com/feed/",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "d5330230-9501-4aee-aad5-8739e7ed7266",
+      "name": "Unit 42 (Palo Alto)",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3728,
+        -720
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.sentinelone.com/labs/feed/",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "886ba1a8-5dce-43dd-bc25-d001465082c1",
+      "name": "SentinelOne Labs",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3728,
+        -608
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.welivesecurity.com/feed/",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "7a29bd45-adbe-45fa-8e1e-c336226d668d",
+      "name": "WeLiveSecurity (ESET)",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3520,
+        -960
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.proofpoint.com/us/rss.xml",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "0cee0af0-879d-494b-b895-acd3a37e5e63",
+      "name": "Proofpoint Threat Insight",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3520,
+        -608
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+        "options": {}
+      },
+      "id": "0f2d4628-cdb3-4025-85ca-42ef45dd6677",
+      "name": "CISA KEV (API)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3520,
+        -2576
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://threatfox.abuse.ch/export/json/recent/",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "be77a64e-4d0f-499d-b7de-e39bc08c5c1b",
+      "name": "ThreatFox Recent IOCs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3520,
+        -2208
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// SENTINEL - Normalize & Extract Entities from RSS Items\n// ============================================================\n\nconst items = $input.all();\nconst results = [];\n\n// CVE Regex\nconst CVE_REGEX = /CVE-\\d{4}-\\d{4,7}/gi;\n\n// IOC Regexes\nconst IP_REGEX = /\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b/g;\nconst DOMAIN_REGEX = /\\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+(?:com|net|org|io|xyz|top|ru|cn|tk|ml|ga|cf|info|biz|online|site|live|me|co)\\b/gi;\nconst HASH_MD5 = /\\b[a-fA-F0-9]{32}\\b/g;\nconst HASH_SHA1 = /\\b[a-fA-F0-9]{40}\\b/g;\nconst HASH_SHA256 = /\\b[a-fA-F0-9]{64}\\b/g;\n\n// MITRE ATT&CK Regex\nconst MITRE_REGEX = /\\b[T][A-Z]?\\d{4}(?:\\.\\d{3})?\\b/g;\n\n// Threat Actor Keywords (common APT groups)\nconst THREAT_ACTORS = [\n  'apt28', 'apt29', 'apt41', 'lazarus', 'cozy bear', 'fancy bear',\n  'sandworm', 'turla', 'carbanak', 'fin7', 'fin8', 'magecart',\n  'revil', 'conti', 'lockbit', 'blackcat', 'alphv', 'cl0p', 'clop',\n  'royal', 'play', 'blackbasta', 'akira', 'medusa', 'rhysida',\n  'scattered spider', 'lapsus', 'kimsuky', 'mustang panda',\n  'volt typhoon', 'charcoal typhoon', 'midnight blizzard'\n];\n\n// Source detection\nfunction detectSource(url, feedTitle) {\n  if (!url) return feedTitle || 'Unknown';\n  const urlLower = url.toLowerCase();\n  \n  if (urlLower.includes('cisa.gov')) return 'CISA';\n  if (urlLower.includes('us-cert')) return 'US-CERT';\n  if (urlLower.includes('cvefeed.io')) return 'CVE Feed';\n  if (urlLower.includes('exploit-db')) return 'Exploit-DB';\n  if (urlLower.includes('msrc.microsoft')) return 'Microsoft MSRC';\n  if (urlLower.includes('projectzero') || urlLower.includes('googleprojectzero')) return 'Google Project Zero';\n  if (urlLower.includes('cisco.com') && urlLower.includes('security')) return 'Cisco PSIRT';\n  if (urlLower.includes('vmware.com')) return 'VMware Security';\n  if (urlLower.includes('thehackernews')) return 'The Hacker News';\n  if (urlLower.includes('bleepingcomputer')) return 'BleepingComputer';\n  if (urlLower.includes('krebs')) return 'Krebs on Security';\n  if (urlLower.includes('darkreading')) return 'Dark Reading';\n  if (urlLower.includes('securityweek')) return 'Security Week';\n  if (urlLower.includes('schneier')) return 'Schneier on Security';\n  if (urlLower.includes('sans.edu') || urlLower.includes('isc.sans')) return 'SANS ISC';\n  if (urlLower.includes('threatpost')) return 'Threatpost';\n  if (urlLower.includes('reddit.com/r/netsec')) return 'Reddit r/netsec';\n  if (urlLower.includes('reddit.com/r/cybersecurity')) return 'Reddit r/cybersecurity';\n  if (urlLower.includes('recordedfuture')) return 'Recorded Future';\n  if (urlLower.includes('crowdstrike')) return 'CrowdStrike';\n  if (urlLower.includes('mandiant')) return 'Mandiant';\n  if (urlLower.includes('securelist') || urlLower.includes('kaspersky')) return 'Kaspersky';\n  if (urlLower.includes('unit42') || urlLower.includes('paloalto')) return 'Unit 42';\n  if (urlLower.includes('sentinelone')) return 'SentinelOne';\n  if (urlLower.includes('welivesecurity') || urlLower.includes('eset')) return 'ESET';\n  if (urlLower.includes('talos') || urlLower.includes('talosintelligence')) return 'Cisco Talos';\n  if (urlLower.includes('fortinet')) return 'Fortinet';\n  if (urlLower.includes('proofpoint')) return 'Proofpoint';\n  \n  return feedTitle || 'Security News';\n}\n\n// Source confidence scoring\nfunction getSourceConfidence(source) {\n  const official = ['CISA', 'US-CERT', 'Microsoft MSRC', 'Google Project Zero', 'Cisco PSIRT', 'VMware Security'];\n  const research = ['Mandiant', 'CrowdStrike', 'Kaspersky', 'Unit 42', 'SentinelOne', 'Cisco Talos', 'Recorded Future'];\n  const news = ['The Hacker News', 'BleepingComputer', 'Krebs on Security', 'Dark Reading'];\n  \n  if (official.includes(source)) return 15;\n  if (research.includes(source)) return 12;\n  if (news.includes(source)) return 8;\n  return 5;\n}\n\n// Simple hash for deduplication\nfunction hash(str) {\n  let h = 5381;\n  for (let i = 0; i < str.length; i++) {\n    h = ((h << 5) + h) + str.charCodeAt(i);\n    h = h & h;\n  }\n  return Math.abs(h).toString(16);\n}\n\nfor (const item of items) {\n  const data = item.json;\n  \n  const title = (data.title || '').trim();\n  const link = data.link || data.url || '';\n  const content = data.contentSnippet || data.content || data.description || '';\n  const isoDate = data.isoDate || data.pubDate || data.date || new Date().toISOString();\n  \n  if (!title) continue;\n  \n  const combined = (title + ' ' + content).toLowerCase();\n  const source = detectSource(link, data.feedTitle);\n  \n  // Extract CVEs\n  const cveMatches = combined.match(CVE_REGEX) || [];\n  const cves = [...new Set(cveMatches.map(c => c.toUpperCase()))];\n  \n  // Extract IOCs\n  const ips = [...new Set((combined.match(IP_REGEX) || []).filter(ip => !ip.startsWith('0.') && !ip.startsWith('127.') && !ip.startsWith('192.168.') && !ip.startsWith('10.')))];\n  const domains = [...new Set(combined.match(DOMAIN_REGEX) || [])];\n  const hashes = [\n    ...new Set([\n      ...(combined.match(HASH_SHA256) || []),\n      ...(combined.match(HASH_SHA1) || []),\n      ...(combined.match(HASH_MD5) || [])\n    ])\n  ];\n  \n  // Extract MITRE ATT&CK\n  const mitreMatches = combined.match(MITRE_REGEX) || [];\n  const mitreTechniques = [...new Set(mitreMatches)];\n  \n  // Extract Threat Actors\n  const foundActors = THREAT_ACTORS.filter(actor => combined.includes(actor.toLowerCase()));\n  \n  // Create fingerprint\n  const fingerprint = hash(title + '|' + isoDate);\n  \n  results.push({\n    json: {\n      fingerprint,\n      title,\n      link,\n      contentSnippet: content.substring(0, 500),\n      isoDate,\n      source,\n      sourceConfidence: getSourceConfidence(source),\n      extractedCVEs: cves,\n      cveCount: cves.length,\n      extractedIOCs: {\n        ips: ips.slice(0, 10),\n        domains: domains.slice(0, 10),\n        hashes: hashes.slice(0, 10)\n      },\n      iocCount: ips.length + domains.length + hashes.length,\n      mitreTechniques,\n      threatActors: foundActors,\n      rawData: data\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "43f09012-1e6a-43c7-a9b7-1e06d4ef2a63",
+      "name": "Normalize & Extract Entities",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3024,
+        -1568
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// SENTINEL - Process CISA KEV JSON\n// ============================================================\n\nconst kevData = $input.first().json;\nconst vulnerabilities = kevData.vulnerabilities || [];\n\n// Get only KEVs added in last 7 days\nconst cutoff = new Date();\ncutoff.setDate(cutoff.getDate() - 7);\n\nconst recentKEVs = vulnerabilities\n  .filter(v => new Date(v.dateAdded) >= cutoff)\n  .map(v => ({\n    json: {\n      fingerprint: `kev-${v.cveID}`,\n      title: `[CISA KEV] ${v.cveID}: ${v.vulnerabilityName}`,\n      link: `https://nvd.nist.gov/vuln/detail/${v.cveID}`,\n      contentSnippet: `${v.shortDescription}. Vendor: ${v.vendorProject}. Product: ${v.product}. Required Action: ${v.requiredAction}. Due Date: ${v.dueDate}`,\n      isoDate: new Date(v.dateAdded).toISOString(),\n      source: 'CISA KEV',\n      sourceConfidence: 20,\n      extractedCVEs: [v.cveID],\n      cveCount: 1,\n      extractedIOCs: { ips: [], domains: [], hashes: [] },\n      iocCount: 0,\n      mitreTechniques: [],\n      threatActors: [],\n      isKEV: true,\n      kevDetails: {\n        vendor: v.vendorProject,\n        product: v.product,\n        requiredAction: v.requiredAction,\n        dueDate: v.dueDate,\n        knownRansomware: v.knownRansomwareCampaignUse === 'Known'\n      }\n    }\n  }));\n\nreturn recentKEVs;"
+      },
+      "id": "90c87f06-a797-489e-ac16-2e01de728d04",
+      "name": "Process CISA KEV",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3328,
+        -2160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// SENTINEL - Process ThreatFox IOCs\n// ============================================================\n\nconst data = $input.first().json;\n\nif (!data || data.query_status !== 'ok' || !data.data) {\n  return [{ json: { skip: true } }];\n}\n\nconst iocs = data.data.slice(0, 30); // Limit to 30 most recent\n\nconst results = iocs.map(ioc => {\n  const iocValue = ioc.ioc;\n  const iocType = ioc.ioc_type;\n  const malware = ioc.malware_printable || ioc.malware || 'Unknown';\n  const threatType = ioc.threat_type_desc || ioc.threat_type || '';\n  \n  return {\n    json: {\n      fingerprint: `threatfox-${ioc.id}`,\n      title: `[IOC] ${malware} - ${iocType}: ${iocValue.substring(0, 50)}`,\n      link: `https://threatfox.abuse.ch/ioc/${ioc.id}/`,\n      contentSnippet: `New IOC reported. Malware: ${malware}. Type: ${iocType}. Threat: ${threatType}. Confidence: ${ioc.confidence_level || 'N/A'}%`,\n      isoDate: new Date(ioc.first_seen_utc || ioc.first_seen).toISOString(),\n      source: 'ThreatFox',\n      sourceConfidence: 10,\n      extractedCVEs: [],\n      cveCount: 0,\n      extractedIOCs: {\n        ips: iocType.includes('ip') ? [iocValue] : [],\n        domains: iocType.includes('domain') ? [iocValue] : [],\n        hashes: iocType.includes('hash') || iocType.includes('md5') || iocType.includes('sha') ? [iocValue] : []\n      },\n      iocCount: 1,\n      mitreTechniques: [],\n      threatActors: [],\n      isThreatFox: true,\n      iocDetails: {\n        malware,\n        iocType,\n        iocValue,\n        confidence: ioc.confidence_level\n      }\n    }\n  };\n});\n\nreturn results;"
+      },
+      "id": "b34b6259-005b-4c7c-b478-22ab5d7598d5",
+      "name": "Process ThreatFox IOCs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3328,
+        -1760
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// SENTINEL - Smart Scoring Engine\n// ============================================================\n\nconst TIME_WINDOW_HOURS = 48;\nconst items = $input.all();\nconst results = [];\n\nconst now = new Date();\nconst cutoff = new Date(now - TIME_WINDOW_HOURS * 60 * 60 * 1000);\n\n// ====== KEYWORD SCORING WEIGHTS ======\nconst CRITICAL_KEYWORDS = {\n  // Zero-days & Active Exploitation\n  'zero-day': 15, 'zero day': 15, '0-day': 15, '0day': 15,\n  'actively exploited': 20, 'active exploitation': 20, 'in the wild': 15,\n  'exploitation in the wild': 20, 'being exploited': 18,\n  \n  // Critical Severity\n  'critical vulnerability': 12, 'critical security': 12,\n  'critical flaw': 12, 'critical bug': 12,\n  'emergency': 10, 'urgent': 8,\n  \n  // Remote Code Execution\n  'rce': 15, 'remote code execution': 15,\n  'arbitrary code execution': 14, 'code execution': 12,\n  \n  // Authentication Bypass\n  'authentication bypass': 14, 'auth bypass': 14,\n  'privilege escalation': 12, 'privesc': 12,\n  \n  // Ransomware\n  'ransomware': 12, 'ransomware attack': 15,\n  'ransomware gang': 12, 'ransomware group': 12,\n  \n  // Supply Chain\n  'supply chain': 12, 'supply-chain': 12,\n  'compromised package': 15, 'backdoored': 15,\n  \n  // Nation State\n  'apt': 10, 'nation-state': 12, 'nation state': 12,\n  'state-sponsored': 12, 'cyber espionage': 10,\n  \n  // CISA/Government\n  'cisa kev': 20, 'known exploited': 18,\n  'patch now': 12, 'patch immediately': 15,\n  \n  // Data Breach\n  'data breach': 10, 'data leak': 8,\n  'millions exposed': 12, 'records exposed': 8,\n  \n  // CVSS Mentions\n  'cvss 10': 18, 'cvss 9.8': 15, 'cvss 9.9': 16,\n  'cvss score of 10': 18, 'cvss score of 9': 14,\n  'maximum severity': 15, 'critical cvss': 12\n};\n\nconst HIGH_KEYWORDS = {\n  'vulnerability': 3, 'vulnerabilities': 3,\n  'exploit': 5, 'exploited': 6,\n  'malware': 5, 'trojan': 5,\n  'backdoor': 6, 'rootkit': 6,\n  'attack': 3, 'attacks': 3,\n  'compromise': 5, 'compromised': 5,\n  'phishing': 4, 'spear-phishing': 5,\n  'cve-': 4, 'security update': 4,\n  'patch': 3, 'patches': 3,\n  'advisory': 3, 'bulletin': 3,\n  'botnet': 5, 'command and control': 5,\n  'c2': 4, 'c&c': 4,\n  'injection': 4, 'sql injection': 6,\n  'xss': 4, 'cross-site': 4,\n  'buffer overflow': 6, 'heap overflow': 6,\n  'use-after-free': 6, 'memory corruption': 6\n};\n\n// Deduplication\nconst seenFingerprints = new Set();\n\nfor (const item of items) {\n  const data = item.json;\n  \n  // Skip if no title or outside time window\n  if (!data.title) continue;\n  \n  const pubDate = new Date(data.isoDate);\n  if (isNaN(pubDate.getTime()) || pubDate < cutoff) continue;\n  \n  // Dedupe\n  if (seenFingerprints.has(data.fingerprint)) continue;\n  seenFingerprints.add(data.fingerprint);\n  \n  const titleLower = data.title.toLowerCase();\n  const contentLower = (data.contentSnippet || '').toLowerCase();\n  const combined = titleLower + ' ' + contentLower;\n  \n  // ====== CALCULATE SCORE ======\n  let score = 0;\n  let matchedKeywords = [];\n  let scoreBreakdown = {};\n  \n  // 1. Keyword Scoring\n  for (const [keyword, points] of Object.entries(CRITICAL_KEYWORDS)) {\n    if (combined.includes(keyword)) {\n      score += points;\n      matchedKeywords.push(`${keyword} (+${points})`);\n      scoreBreakdown.criticalKeywords = (scoreBreakdown.criticalKeywords || 0) + points;\n    }\n  }\n  \n  for (const [keyword, points] of Object.entries(HIGH_KEYWORDS)) {\n    if (combined.includes(keyword)) {\n      score += points;\n      if (matchedKeywords.length < 10) {\n        matchedKeywords.push(`${keyword} (+${points})`);\n      }\n      scoreBreakdown.highKeywords = (scoreBreakdown.highKeywords || 0) + points;\n    }\n  }\n  \n  // 2. Source Confidence\n  score += data.sourceConfidence || 5;\n  scoreBreakdown.sourceConfidence = data.sourceConfidence || 5;\n  \n  // 3. CVE Bonus\n  if (data.cveCount > 0) {\n    const cveBonus = Math.min(data.cveCount * 5, 20);\n    score += cveBonus;\n    scoreBreakdown.cveBonus = cveBonus;\n  }\n  \n  // 4. IOC Bonus\n  if (data.iocCount > 0) {\n    const iocBonus = Math.min(data.iocCount * 2, 10);\n    score += iocBonus;\n    scoreBreakdown.iocBonus = iocBonus;\n  }\n  \n  // 5. KEV Bonus (huge)\n  if (data.isKEV) {\n    score += 50;\n    scoreBreakdown.kevBonus = 50;\n  }\n  \n  // 6. Ransomware Bonus\n  if (data.isRansomware) {\n    score += 15;\n    scoreBreakdown.ransomwareBonus = 15;\n  }\n  \n  // 7. Threat Actor Bonus\n  if (data.threatActors && data.threatActors.length > 0) {\n    score += 10;\n    scoreBreakdown.threatActorBonus = 10;\n  }\n  \n  // 8. MITRE ATT&CK Bonus\n  if (data.mitreTechniques && data.mitreTechniques.length > 0) {\n    score += 5;\n    scoreBreakdown.mitreBonus = 5;\n  }\n  \n  // 9. Recency Bonus\n  const hoursAgo = (now - pubDate) / (1000 * 60 * 60);\n  if (hoursAgo <= 2) {\n    score += 10;\n    scoreBreakdown.recencyBonus = 10;\n  } else if (hoursAgo <= 6) {\n    score += 7;\n    scoreBreakdown.recencyBonus = 7;\n  } else if (hoursAgo <= 12) {\n    score += 4;\n    scoreBreakdown.recencyBonus = 4;\n  }\n  \n  // ====== DETERMINE PRIORITY ======\n  let priority, color, emoji;\n  \n  if (score >= 80 || data.isKEV) {\n    priority = 'CRITICAL';\n    color = 15158332; // Red\n    emoji = '🔴';\n  } else if (score >= 50) {\n    priority = 'HIGH';\n    color = 15105570; // Orange\n    emoji = '🟠';\n  } else if (score >= 25) {\n    priority = 'MEDIUM';\n    color = 16776960; // Yellow\n    emoji = '🟡';\n  } else {\n    priority = 'LOW';\n    color = 3447003; // Blue\n    emoji = '🔵';\n  }\n  \n  results.push({\n    json: {\n      ...data,\n      score,\n      priority,\n      priorityEmoji: emoji,\n      discordColor: color,\n      matchedKeywords: matchedKeywords.slice(0, 8),\n      scoreBreakdown,\n      processedAt: now.toISOString()\n    }\n  });\n}\n\n// Sort by score descending\nresults.sort((a, b) => b.json.score - a.json.score);\n\nreturn results;"
+      },
+      "id": "5f38139b-ed3c-4ae8-9628-fccefa333066",
+      "name": "Smart Scoring Engine",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2432,
+        -1568
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "filter-score",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": 20,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "9c69cca4-c909-4fed-88d7-2dbd34e26c1e",
+      "name": "Filter Min Score 20",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [
+        -2224,
+        -1568
+      ]
+    },
+    {
+      "parameters": {
+        "databaseId": "YOUR_BASEROW_DATABASE_ID",
+        "tableId": "YOUR_BASEROW_TABLE_ID",
+        "returnAll": true,
+        "additionalOptions": {}
+      },
+      "id": "a931f5df-e4f5-4571-9caa-6e4d11d1c1ab",
+      "name": "Get Existing Fingerprints",
+      "type": "n8n-nodes-base.baserow",
+      "typeVersion": 1,
+      "position": [
+        -2032,
+        -1568
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "baserowApi": {
+          "id": "YOUR_BASEROW_CREDENTIAL_ID",
+          "name": "Baserow account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// SENTINEL - Deduplicate Against Database\n// Matches working template pattern exactly\n// ============================================================\n\nconst scoredItems = $('Filter Min Score 20').all();\nconst baserowItems = $('Get Existing Fingerprints').all();\n\n// Build set of existing fingerprints\nconst existingFingerprints = new Set();\nfor (const item of baserowItems) {\n  if (item.json.fingerprint) {\n    existingFingerprints.add(item.json.fingerprint);\n  }\n}\n\n// Debug: log what we found\nconsole.log('Existing fingerprints in DB:', existingFingerprints.size);\nconsole.log('Incoming items:', scoredItems.length);\n\n// Filter out already-sent items\nconst results = [];\nfor (const item of scoredItems) {\n  if (!existingFingerprints.has(item.json.fingerprint)) {\n    results.push(item);\n  }\n}\n\nconsole.log('New items after dedupe:', results.length);\n\nreturn results;"
+      },
+      "id": "3c66e921-daea-4748-8157-2c09b70a623f",
+      "name": "Deduplicate Against DB",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1824,
+        -1568
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-cve",
+              "leftValue": "={{ $json.cveCount }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d394a04c-eda9-4cec-ac47-7b1ff5edd87f",
+      "name": "Has CVE?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1632,
+        -1568
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://services.nvd.nist.gov/rest/json/cves/2.0?cveId={{ $json.extractedCVEs[0] }}&apiKey=YOUR_NVD_API_KEY_HERE",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "5394d511-925a-4407-9301-f5bd30ede901",
+      "name": "NVD Lookup",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1424,
+        -1664
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "=https://api.first.org/data/v1/epss?cve={{ $json.extractedCVEs[0] }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "73bb9f0d-bd3a-4bdb-bd0a-a190c5c8994c",
+      "name": "EPSS Lookup",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1232,
+        -1664
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// SENTINEL - Enrich with NVD & EPSS Data\n// ============================================================\n\nconst originalItem = $('Has CVE?').first().json;\nlet nvdData = null;\nlet epssData = null;\n\ntry {\n  nvdData = $('NVD Lookup').first().json;\n} catch (e) {}\n\ntry {\n  epssData = $('EPSS Lookup').first().json;\n} catch (e) {}\n\nlet enriched = { ...originalItem };\n\n// Extract NVD data\nif (nvdData && nvdData.vulnerabilities && nvdData.vulnerabilities[0]) {\n  const vuln = nvdData.vulnerabilities[0].cve;\n  const metrics = vuln.metrics || {};\n  \n  // Get CVSS score (prefer 3.1, then 3.0, then 2.0)\n  let cvssScore = null;\n  let cvssVector = null;\n  let cvssSeverity = null;\n  \n  if (metrics.cvssMetricV31 && metrics.cvssMetricV31[0]) {\n    cvssScore = metrics.cvssMetricV31[0].cvssData.baseScore;\n    cvssVector = metrics.cvssMetricV31[0].cvssData.vectorString;\n    cvssSeverity = metrics.cvssMetricV31[0].cvssData.baseSeverity;\n  } else if (metrics.cvssMetricV30 && metrics.cvssMetricV30[0]) {\n    cvssScore = metrics.cvssMetricV30[0].cvssData.baseScore;\n    cvssVector = metrics.cvssMetricV30[0].cvssData.vectorString;\n    cvssSeverity = metrics.cvssMetricV30[0].cvssData.baseSeverity;\n  } else if (metrics.cvssMetricV2 && metrics.cvssMetricV2[0]) {\n    cvssScore = metrics.cvssMetricV2[0].cvssData.baseScore;\n    cvssVector = metrics.cvssMetricV2[0].cvssData.vectorString;\n    cvssSeverity = metrics.cvssMetricV2[0].baseSeverity;\n  }\n  \n  // Get CWE\n  let cweIds = [];\n  if (vuln.weaknesses) {\n    for (const weakness of vuln.weaknesses) {\n      for (const desc of weakness.description || []) {\n        if (desc.value && desc.value.startsWith('CWE-')) {\n          cweIds.push(desc.value);\n        }\n      }\n    }\n  }\n  \n  enriched.nvdEnrichment = {\n    cvssScore,\n    cvssVector,\n    cvssSeverity,\n    cweIds,\n    description: vuln.descriptions?.find(d => d.lang === 'en')?.value || '',\n    published: vuln.published,\n    lastModified: vuln.lastModified\n  };\n  \n  // Adjust score based on CVSS\n  if (cvssScore) {\n    const cvssBonus = Math.round((cvssScore / 10) * 25);\n    enriched.score += cvssBonus;\n    enriched.scoreBreakdown.cvssBonus = cvssBonus;\n    \n    // Update priority if CVSS is critical\n    if (cvssScore >= 9.0 && enriched.priority !== 'CRITICAL') {\n      enriched.priority = 'CRITICAL';\n      enriched.priorityEmoji = '🔴';\n      enriched.discordColor = 15158332;\n    }\n  }\n}\n\n// Extract EPSS data\nif (epssData && epssData.data && epssData.data[0]) {\n  const epss = epssData.data[0];\n  enriched.epssEnrichment = {\n    epssScore: parseFloat(epss.epss),\n    percentile: parseFloat(epss.percentile),\n    date: epss.date\n  };\n  \n  // Adjust score based on EPSS\n  const epssPercent = parseFloat(epss.epss) * 100;\n  if (epssPercent >= 10) {\n    enriched.score += 20;\n    enriched.scoreBreakdown.epssHighBonus = 20;\n  } else if (epssPercent >= 1) {\n    enriched.score += 10;\n    enriched.scoreBreakdown.epssMedBonus = 10;\n  }\n}\n\nreturn [{ json: enriched }];"
+      },
+      "id": "a9db6dbe-85e3-41d3-8331-0f296419b822",
+      "name": "Enrich CVE Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1024,
+        -1664
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "is-critical",
+              "leftValue": "={{ $json.priority }}",
+              "rightValue": "CRITICAL",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "7360639e-e000-44db-9cc0-99b75f6dd32f",
+      "name": "Is Critical?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        -1568
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "databaseId": "YOUR_BASEROW_DATABASE_ID",
+        "tableId": "YOUR_BASEROW_TABLE_ID",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "YOUR_FINGERPRINT_FIELD_ID",
+              "fieldValue": "={{ $('Route by Priority').item.json.fingerprint }}"
+            },
+            {
+              "fieldId": "YOUR_TITLE_FIELD_ID",
+              "fieldValue": "={{ $('Route by Priority').item.json.title }}"
+            },
+            {
+              "fieldId": "YOUR_CREATED_FIELD_ID",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "id": "2b05cddc-6c1d-4cdd-b1a6-a15dab003d04",
+      "name": "Save Fingerprint (Critical)",
+      "type": "n8n-nodes-base.baserow",
+      "typeVersion": 1,
+      "position": [
+        192,
+        -1664
+      ],
+      "credentials": {
+        "baserowApi": {
+          "id": "YOUR_BASEROW_CREDENTIAL_ID",
+          "name": "Baserow account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "databaseId": "YOUR_BASEROW_DATABASE_ID",
+        "tableId": "YOUR_BASEROW_TABLE_ID",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "YOUR_FINGERPRINT_FIELD_ID",
+              "fieldValue": "={{ $('Route by Priority').item.json.fingerprint }}"
+            },
+            {
+              "fieldId": "YOUR_TITLE_FIELD_ID",
+              "fieldValue": "={{ $('Route by Priority').item.json.title }}"
+            },
+            {
+              "fieldId": "YOUR_CREATED_FIELD_ID",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "id": "fe5067d0-5153-4094-910c-420af81618cf",
+      "name": "Save Fingerprint (Other)",
+      "type": "n8n-nodes-base.baserow",
+      "typeVersion": 1,
+      "position": [
+        192,
+        -1456
+      ],
+      "credentials": {
+        "baserowApi": {
+          "id": "YOUR_BASEROW_CREDENTIAL_ID",
+          "name": "Baserow account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "id": "39eb8fe3-51de-4184-8986-f432802c2ba1",
+      "name": "Wait 3s (Critical)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        400,
+        -1664
+      ],
+      "webhookId": "sentinel-wait-crit"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "id": "385bc6b7-a7d9-4915-817e-5d0d181ad768",
+      "name": "Wait 3s (Other)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        400,
+        -1456
+      ],
+      "webhookId": "sentinel-wait-other"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      "id": "01090a2f-45ec-4b68-b2e4-3e8c4f352681",
+      "name": "Daily Cleanup (3 AM)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -4208,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "databaseId": "YOUR_BASEROW_DATABASE_ID",
+        "tableId": "YOUR_BASEROW_TABLE_ID",
+        "returnAll": true,
+        "additionalOptions": {}
+      },
+      "id": "6cf1cf8b-2c5f-46c2-982f-39f575a7f61f",
+      "name": "Get All Fingerprints",
+      "type": "n8n-nodes-base.baserow",
+      "typeVersion": 1,
+      "position": [
+        -3904,
+        352
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "baserowApi": {
+          "id": "YOUR_BASEROW_CREDENTIAL_ID",
+          "name": "Baserow account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filter fingerprints older than 7 days\nconst items = $input.all();\nconst cutoff = new Date();\ncutoff.setDate(cutoff.getDate() - 7);\n\nconst oldItems = items.filter(item => {\n  const created = new Date(item.json.created_on || item.json.created_at);\n  return created < cutoff;\n});\n\nreturn oldItems;"
+      },
+      "id": "5b70482a-28a9-45c2-ba17-97f434ca6d1e",
+      "name": "Filter Old (7+ days)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3616,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "databaseId": "YOUR_BASEROW_DATABASE_ID",
+        "tableId": "YOUR_BASEROW_TABLE_ID",
+        "rowId": "=={{ $json.id }}"
+      },
+      "id": "baf9a564-66bd-42ef-a401-d30537e89df9",
+      "name": "Delete Old Fingerprints",
+      "type": "n8n-nodes-base.baserow",
+      "typeVersion": 1,
+      "position": [
+        -3312,
+        352
+      ],
+      "credentials": {
+        "baserowApi": {
+          "id": "YOUR_BASEROW_CREDENTIAL_ID",
+          "name": "Baserow account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "databaseId": "YOUR_BASEROW_DATABASE_ID",
+        "tableId": "YOUR_BASEROW_TABLE_ID",
+        "returnAll": true,
+        "additionalOptions": {}
+      },
+      "id": "7b63dcb6-b5c5-48d0-bb4a-6c1d019fbf3a",
+      "name": "Get Recent Alerts (Digest)",
+      "type": "n8n-nodes-base.baserow",
+      "typeVersion": 1,
+      "position": [
+        -3920,
+        -160
+      ],
+      "credentials": {
+        "baserowApi": {
+          "id": "YOUR_BASEROW_CREDENTIAL_ID",
+          "name": "Baserow account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// SENTINEL - Build Daily Digest Summary (Simple)\nconst items = $input.all();\nconst now = new Date();\nconst yesterday = new Date(now - 24 * 60 * 60 * 1000);\n\n// Filter to last 24 hours using sent_at field\nconst recentItems = items.filter(item => {\n  const sentAt = new Date(item.json.sent_at || item.json.created_on || item.json.created_at);\n  return sentAt >= yesterday;\n});\n\nif (recentItems.length === 0) {\n  return [{\n    json: {\n      hasAlerts: false,\n      totalAlerts: 0,\n      alertTitles: [],\n      alertsForAI: 'No alerts in the last 24 hours.',\n      generatedAt: now.toISOString()\n    }\n  }];\n}\n\n// Get alert titles for AI summary\nconst alertTitles = recentItems\n  .map(item => item.json.title || 'Unknown Alert')\n  .slice(0, 15);\n\nconst alertsForAI = alertTitles\n  .map((title, i) => `${i+1}. ${title}`)\n  .join('\\n');\n\nreturn [{\n  json: {\n    hasAlerts: true,\n    totalAlerts: recentItems.length,\n    alertTitles: alertTitles,\n    alertsForAI: alertsForAI,\n    generatedAt: now.toISOString()\n  }\n}];"
+      },
+      "id": "5922227b-65f7-4626-8931-5f9feb46635d",
+      "name": "Build Digest Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3696,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"embeds\": [{\n    \"title\": \"📊 SENTINEL Daily Threat Intel Digest\",\n    \"color\": 3447003,\n    \"description\": {{ JSON.stringify($json.aiSummary || 'No AI summary available.') }},\n    \"fields\": [\n      {\n        \"name\": \"📈 24-Hour Total\",\n        \"value\": {{ JSON.stringify(\"**\" + $json.totalAlerts + \" alerts** processed\") }},\n        \"inline\": false\n      }\n    ],\n    \"footer\": {\n      \"text\": \"🛡️ SENTINEL | Daily Briefing\"\n    },\n    \"timestamp\": {{ JSON.stringify($json.generatedAt || new Date().toISOString()) }}\n  }]\n}",
+        "options": {}
+      },
+      "id": "3c52415f-8ce0-49cb-800b-1652125458da",
+      "name": "Send Daily Digest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2896,
+        -304
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://discord.com/api/webhooks/YOUR_CRITICAL_WEBHOOK_ID/YOUR_CRITICAL_WEBHOOK_TOKEN",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"content\": \"@everyone 🚨 **CRITICAL SECURITY ALERT**\",\n  \"embeds\": [{\n    \"title\": {{ JSON.stringify(($json.title || 'Security Alert').substring(0, 256)) }},\n    \"url\": {{ JSON.stringify($json.link || '') }},\n    \"color\": {{ $json.discordColor || 15158332 }},\n    \"description\": {{ JSON.stringify(($json.contentSnippet || 'Review this critical alert').substring(0, 400)) }},\n    \"fields\": [\n      {\n        \"name\": \"🏷️ Priority\",\n        \"value\": {{ JSON.stringify($json.priority || 'CRITICAL') }},\n        \"inline\": true\n      },\n      {\n        \"name\": \"📰 Source\",\n        \"value\": {{ JSON.stringify($json.source || 'Security Feed') }},\n        \"inline\": true\n      },\n      {\n        \"name\": \"📊 Score\",\n        \"value\": {{ JSON.stringify(String($json.score || 0)) }},\n        \"inline\": true\n      },\n      {\n        \"name\": \"🔢 CVEs\",\n        \"value\": {{ JSON.stringify($json.extractedCVEs && $json.extractedCVEs.length > 0 ? $json.extractedCVEs.join(', ') : 'None detected') }},\n        \"inline\": false\n      },\n      {\n        \"name\": \"🔍 Triggers\",\n        \"value\": {{ JSON.stringify($json.matchedKeywords && $json.matchedKeywords.length > 0 ? $json.matchedKeywords.slice(0,5).join(', ') : 'keyword match') }},\n        \"inline\": false\n      }\n    ],\n    \"footer\": {\n      \"text\": \"🚨 SENTINEL | Critical Alert\"\n    },\n    \"timestamp\": {{ JSON.stringify($json.processedAt || new Date().toISOString()) }}\n  }]\n}",
+        "options": {}
+      },
+      "id": "6f5e9366-8e27-48c1-b3d5-ff2893cde8c0",
+      "name": "Discord Critical Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -16,
+        -1664
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://discord.com/api/webhooks/YOUR_GENERAL_WEBHOOK_ID/YOUR_GENERAL_WEBHOOK_TOKEN",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"embeds\": [{\n    \"title\": {{ JSON.stringify(($json.title || 'Security Alert').substring(0, 256)) }},\n    \"url\": {{ JSON.stringify($json.link || '') }},\n    \"color\": {{ $json.discordColor || 15105570 }},\n    \"description\": {{ JSON.stringify(($json.contentSnippet || 'Review this security alert').substring(0, 300)) }},\n    \"fields\": [\n      {\n        \"name\": \"Priority\",\n        \"value\": {{ JSON.stringify($json.priority || 'MEDIUM') }},\n        \"inline\": true\n      },\n      {\n        \"name\": \"Source\",\n        \"value\": {{ JSON.stringify($json.source || 'Security Feed') }},\n        \"inline\": true\n      },\n      {\n        \"name\": \"Score\",\n        \"value\": {{ JSON.stringify(String($json.score || 0)) }},\n        \"inline\": true\n      },\n      {\n        \"name\": \"CVEs\",\n        \"value\": {{ JSON.stringify($json.extractedCVEs && $json.extractedCVEs.length > 0 ? $json.extractedCVEs.join(', ') : 'None') }},\n        \"inline\": false\n      }\n    ],\n    \"footer\": {\n      \"text\": \"📡 SENTINEL Threat Intel\"\n    },\n    \"timestamp\": {{ JSON.stringify($json.processedAt || new Date().toISOString()) }}\n  }]\n}",
+        "options": {}
+      },
+      "id": "fba4fe67-b1a7-455b-8770-792f5134f4c3",
+      "name": "Discord High/Medium Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -16,
+        -1456
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.priority }}",
+                    "rightValue": "CRITICAL",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Critical"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "f644a9cb-7f7f-4103-961b-681838f84f57",
+      "name": "Route by Priority",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -624,
+        -1568
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://feeds.fortinet.com/fortinet/blog/threat-research",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "1a2eaa06-7c4a-4a84-b9a3-85438bc4d34c",
+      "name": "Fortinet Threat Research",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -3520,
+        -752
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o-mini\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a cybersecurity analyst providing a daily threat intelligence briefing. Summarize the key threats from the last 24 hours in 3-5 bullet points. Focus on: what types of threats were reported, any patterns you notice, and general recommendations. Be concise and executive-friendly.\"\n    },\n    {\n      \"role\": \"user\", \n      \"content\": {{ JSON.stringify(\"Daily Threat Summary - \" + $json.totalAlerts + \" alerts in last 24 hours:\\n\\nAlert Titles:\\n\" + $json.alertsForAI) }}\n    }\n  ],\n  \"max_tokens\": 400,\n  \"temperature\": 0.3\n}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "227b096c-3b44-482b-acd2-d401a404cf33",
+      "name": "AI Digest Summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3312,
+        -304
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "7WN3dBtlNvm5cqrm",
+          "name": "Header Auth account"
+        },
+        "openAiApi": {
+          "id": "D40KDvNDjfKgTuky",
+          "name": "OpenAi account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Parse AI Digest response\nconst aiResponse = $json;\nconst originalData = $('Build Digest Summary').first().json;\n\nlet aiSummary = '';\ntry {\n  if (aiResponse.choices && aiResponse.choices[0] && aiResponse.choices[0].message) {\n    aiSummary = aiResponse.choices[0].message.content || '';\n  }\n} catch (e) {\n  aiSummary = 'AI summary unavailable.';\n}\n\nreturn {\n  json: {\n    ...originalData,\n    aiSummary: aiSummary\n  }\n};"
+      },
+      "id": "46015f94-85ab-4bcb-b076-58b64632e985",
+      "name": "Parse Digest AI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3104,
+        -304
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-has-alerts",
+              "leftValue": "={{ $json.hasAlerts }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "255e52ba-347e-42ab-83c2-0177965cac63",
+      "name": "Has Alerts?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -3520,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://discord.com/api/webhooks/YOUR_GENERAL_WEBHOOK_ID/YOUR_GENERAL_WEBHOOK_TOKEN",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"embeds\": [{\n    \"title\": \"📊 SENTINEL Daily Threat Intel Digest\",\n    \"color\": 3066993,\n    \"description\": \"✅ **All Clear!**\\n\\nNo new threat intelligence alerts in the last 24 hours. Systems are operating normally.\",\n    \"footer\": {\n      \"text\": \"🛡️ SENTINEL | Daily Briefing\"\n    },\n    \"timestamp\": {{ JSON.stringify(new Date().toISOString()) }}\n  }]\n}",
+        "options": {}
+      },
+      "id": "1aee7d24-d215-40c1-ae2c-de74b8ea76c2",
+      "name": "Send No-Alerts Digest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3216,
+        -16
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every 15 Min (Critical)": {
+      "main": [
+        [
+          {
+            "node": "CISA Advisories",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "CISA News",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "US-CERT Alerts",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Exploit-DB",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Microsoft MSRC",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Google Project Zero",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Cisco PSIRT",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "CISA KEV (API)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "ThreatFox Recent IOCs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every Hour (High Priority)": {
+      "main": [
+        [
+          {
+            "node": "The Hacker News",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "BleepingComputer",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Krebs on Security",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Dark Reading",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Security Week",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Schneier on Security",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "SANS ISC",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Threatpost",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 4 Hours (General)": {
+      "main": [
+        [
+          {
+            "node": "Reddit r/netsec",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Reddit r/cybersecurity",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Recorded Future Blog",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "CrowdStrike Blog",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Mandiant Blog",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Securelist (Kaspersky)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Unit 42 (Palo Alto)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "SentinelOne Labs",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "WeLiveSecurity (ESET)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Proofpoint Threat Insight",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fortinet Threat Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CISA Advisories": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CISA News": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "US-CERT Alerts": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exploit-DB": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Microsoft MSRC": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Project Zero": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cisco PSIRT": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "The Hacker News": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BleepingComputer": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Krebs on Security": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dark Reading": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Security Week": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schneier on Security": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SANS ISC": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Threatpost": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reddit r/netsec": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reddit r/cybersecurity": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recorded Future Blog": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CrowdStrike Blog": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mandiant Blog": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Securelist (Kaspersky)": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unit 42 (Palo Alto)": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SentinelOne Labs": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WeLiveSecurity (ESET)": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Proofpoint Threat Insight": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CISA KEV (API)": {
+      "main": [
+        [
+          {
+            "node": "Process CISA KEV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ThreatFox Recent IOCs": {
+      "main": [
+        [
+          {
+            "node": "Process ThreatFox IOCs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process CISA KEV": {
+      "main": [
+        [
+          {
+            "node": "Smart Scoring Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process ThreatFox IOCs": {
+      "main": [
+        [
+          {
+            "node": "Smart Scoring Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize & Extract Entities": {
+      "main": [
+        [
+          {
+            "node": "Smart Scoring Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Smart Scoring Engine": {
+      "main": [
+        [
+          {
+            "node": "Filter Min Score 20",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Min Score 20": {
+      "main": [
+        [
+          {
+            "node": "Get Existing Fingerprints",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Existing Fingerprints": {
+      "main": [
+        [
+          {
+            "node": "Deduplicate Against DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deduplicate Against DB": {
+      "main": [
+        [
+          {
+            "node": "Has CVE?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has CVE?": {
+      "main": [
+        [
+          {
+            "node": "NVD Lookup",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Critical?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NVD Lookup": {
+      "main": [
+        [
+          {
+            "node": "EPSS Lookup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EPSS Lookup": {
+      "main": [
+        [
+          {
+            "node": "Enrich CVE Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich CVE Data": {
+      "main": [
+        [
+          {
+            "node": "Is Critical?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Critical?": {
+      "main": [
+        [
+          {
+            "node": "Route by Priority",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route by Priority",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Fingerprint (Critical)": {
+      "main": [
+        [
+          {
+            "node": "Wait 3s (Critical)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Fingerprint (Other)": {
+      "main": [
+        [
+          {
+            "node": "Wait 3s (Other)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily Cleanup (3 AM)": {
+      "main": [
+        [
+          {
+            "node": "Get All Fingerprints",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Fingerprints": {
+      "main": [
+        [
+          {
+            "node": "Filter Old (7+ days)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Old (7+ days)": {
+      "main": [
+        [
+          {
+            "node": "Delete Old Fingerprints",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily Digest (6 AM)": {
+      "main": [
+        [
+          {
+            "node": "Get Recent Alerts (Digest)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Recent Alerts (Digest)": {
+      "main": [
+        [
+          {
+            "node": "Build Digest Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Digest Summary": {
+      "main": [
+        [
+          {
+            "node": "Has Alerts?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discord Critical Alert": {
+      "main": [
+        [
+          {
+            "node": "Save Fingerprint (Critical)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discord High/Medium Alert": {
+      "main": [
+        [
+          {
+            "node": "Save Fingerprint (Other)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Priority": {
+      "main": [
+        [
+          {
+            "node": "Discord Critical Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Discord High/Medium Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fortinet Threat Research": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Extract Entities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Digest Summary": {
+      "main": [
+        [
+          {
+            "node": "Parse Digest AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Digest AI": {
+      "main": [
+        [
+          {
+            "node": "Send Daily Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Alerts?": {
+      "main": [
+        [
+          {
+            "node": "AI Digest Summary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send No-Alerts Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f09c717d-9951-4a64-9dae-d4e693677c31",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "YOUR_N8N_INSTANCE_ID"
+  },
+  "id": "7Ph67p9fj0cAMN5k",
+  "tags": [
+    {
+      "updatedAt": "2025-12-04T15:45:26.654Z",
+      "createdAt": "2025-12-04T15:45:26.654Z",
+      "id": "58bAzd0ZWh8v0ZE8",
+      "name": "threat-intel"
+    },
+    {
+      "updatedAt": "2025-12-04T15:45:26.659Z",
+      "createdAt": "2025-12-04T15:45:26.659Z",
+      "id": "8wmnwXpynCbaE2ij",
+      "name": "sentinel"
+    },
+    {
+      "updatedAt": "2025-12-04T15:45:26.657Z",
+      "createdAt": "2025-12-04T15:45:26.657Z",
+      "id": "bgASIYJTuCGzSG7V",
+      "name": "security"
+    }
+  ]
+}
