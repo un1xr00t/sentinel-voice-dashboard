@@ -12,10 +12,6 @@ set -e
 # Change this to your domain (use DuckDNS for free domains)
 DOMAIN="YOUR_DOMAIN_HERE"  # e.g., sentinel.duckdns.org or yourdomain.com
 
-# Dashboard password (change this!)
-DASHBOARD_USER="sentinel"
-DASHBOARD_PASSWORD="CHANGE_THIS_PASSWORD"
-
 # Timezone (change to yours)
 TIMEZONE="America/New_York"
 # ===================================
@@ -39,7 +35,6 @@ fi
 
 echo "📋 Configuration:"
 echo "   Domain: $DOMAIN"
-echo "   User: $DASHBOARD_USER"
 echo "   Timezone: $TIMEZONE"
 echo ""
 read -p "Continue with this configuration? (y/n) " -n 1 -r
@@ -61,7 +56,7 @@ apt update && apt upgrade -y
 # Install required packages
 echo ""
 echo "📦 Installing nginx, certbot, and tools..."
-apt install -y nginx certbot python3-certbot-nginx apache2-utils fail2ban ufw
+apt install -y nginx certbot python3-certbot-nginx fail2ban ufw
 
 # Create web directory
 echo ""
@@ -108,8 +103,6 @@ server {
     index index.html;
 
     location / {
-        auth_basic "SENTINEL Access";
-        auth_basic_user_file /etc/nginx/.htpasswd;
         try_files \$uri \$uri/ /index.html;
     }
 
@@ -127,13 +120,6 @@ NGINXEOF
 # Enable site
 ln -sf /etc/nginx/sites-available/sentinel /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
-
-# Create password file
-echo ""
-echo "🔐 Creating password protection..."
-htpasswd -cb /etc/nginx/.htpasswd "$DASHBOARD_USER" "$DASHBOARD_PASSWORD"
-chmod 640 /etc/nginx/.htpasswd
-chown root:www-data /etc/nginx/.htpasswd
 
 # Test nginx config
 echo ""
@@ -168,14 +154,6 @@ enabled = true
 port = ssh
 filter = sshd
 logpath = /var/log/auth.log
-
-[nginx-http-auth]
-enabled = true
-port = http,https
-filter = nginx-http-auth
-logpath = /var/log/nginx/error.log
-maxretry = 5
-bantime = 3600
 FAIL2BANEOF
 
 systemctl restart fail2ban
@@ -204,21 +182,15 @@ echo "=========================================="
 echo ""
 echo "📋 Summary:"
 echo "   Dashboard URL: https://$DOMAIN"
-echo "   Username: $DASHBOARD_USER"
-echo "   Password: $DASHBOARD_PASSWORD"
 echo ""
 echo "📁 File locations:"
 echo "   Dashboard files: /var/www/sentinel/"
 echo "   Nginx config: /etc/nginx/sites-available/sentinel"
-echo "   Password file: /etc/nginx/.htpasswd"
 echo ""
 echo "🔧 Next steps:"
 echo "   1. Upload your index.html to /var/www/sentinel/"
 echo "   2. Update the API_URL and RETELL_TOKEN_URL in index.html"
 echo "   3. Test the dashboard at https://$DOMAIN"
-echo ""
-echo "🔐 To change password later:"
-echo "   htpasswd -b /etc/nginx/.htpasswd $DASHBOARD_USER NEW_PASSWORD"
 echo ""
 echo "📜 SSL certificate auto-renews. Check with:"
 echo "   certbot certificates"
