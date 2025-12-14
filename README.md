@@ -2,7 +2,8 @@
 
 A comprehensive threat intelligence platform that aggregates 20+ security feeds, enriches with CVE/EPSS data, delivers prioritized Discord alerts, and includes optional voice query and real-time dashboard addons.
 
-![Dashboard Preview](docs/dashboard-preview.png)
+<img width="2514" height="1536" alt="image" src="https://github.com/user-attachments/assets/b1975572-46dc-4a8d-b10f-67f3037061d5" />
+
 
 ## Features
 
