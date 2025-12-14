@@ -46,11 +46,13 @@ A comprehensive threat intelligence platform that aggregates 20+ security feeds,
                               │
             ┌─────────────────┴─────────────────┐
             ▼                                   ▼
-┌─────────────────────┐             ┌─────────────────────┐
-│   ADDON: Voice      │             │   ADDON: Dashboard  │
-│   Query API         │             │   (React/HTML)      │
-│   (Retell AI)       │             │                     │
-└─────────────────────┘             └─────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                   ADDONS (Optional)                             │
+│  ┌─────────────────────┐       ┌─────────────────────┐         │
+│  │   Voice Query API   │       │   Web Dashboard     │         │
+│  │   (Retell AI)       │       │   (React/HTML)      │         │
+│  └─────────────────────┘       └─────────────────────┘         │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Prerequisites
@@ -61,9 +63,10 @@ A comprehensive threat intelligence platform that aggregates 20+ security feeds,
 - [NVD API Key](https://nvd.nist.gov/developers/request-an-api-key) (free, for CVE enrichment)
 - [OpenAI API](https://platform.openai.com/) key (for daily digest AI summary)
 
-**For Voice Addon:**
-- [Retell AI](https://retellai.com/) account
-- Web server with HTTPS (required for microphone access)
+**For Voice/Dashboard Addons:**
+- [Retell AI](https://retellai.com/) account (voice only)
+- VPS/Server with HTTPS (Linode, DigitalOcean, etc.)
+- Domain name (free via [DuckDNS](https://www.duckdns.org/))
 
 ## Quick Start
 
@@ -112,31 +115,98 @@ Copy the webhook URLs.
 1. Import `SENTINEL_Voice_Query_API.json` into n8n
 2. Update Baserow credentials and IDs (same as core workflow)
 3. Update OpenAI credentials
-4. Create Retell AI agent (see below)
+4. Create Retell AI agent (see [Retell Configuration](#retell-ai-agent-configuration))
 5. Update the "Create Retell Web Call" node with your Retell API key and Agent ID
 6. Activate the workflow
 
-### 5. (Optional) Deploy Dashboard
+### 5. (Optional) Deploy Dashboard Server
 
-1. Update `index.html` with your n8n webhook URLs:
-   ```javascript
-   const API_URL = 'https://YOUR_N8N_URL/webhook/sentinel-dashboard';
-   const RETELL_TOKEN_URL = 'https://YOUR_N8N_URL/webhook/sentinel-retell-token';
-   ```
+#### Quick Setup with Script
 
-2. Deploy to a web server with HTTPS:
+1. Spin up a VPS (Ubuntu 22.04/24.04 recommended):
+   - [Linode Nanode](https://www.linode.com/) - $5/mo
+   - [DigitalOcean Droplet](https://www.digitalocean.com/) - $4/mo
+   - Any Ubuntu VPS works
+
+2. Get a domain (free option):
+   - Go to [DuckDNS](https://www.duckdns.org/)
+   - Create a subdomain (e.g., `sentinel.duckdns.org`)
+   - Point it to your VPS IP address
+
+3. SSH into your server and run:
    ```bash
-   # Example: Nginx on Ubuntu
-   apt install -y nginx certbot python3-certbot-nginx
-   cp index.html /var/www/sentinel/
-   certbot --nginx -d yourdomain.com
+   # Download setup script
+   wget https://raw.githubusercontent.com/un1xr00t/sentinel-threat-intel/main/setup-server.sh
+   
+   # Edit configuration (set your domain and password)
+   nano setup-server.sh
+   
+   # Run setup
+   chmod +x setup-server.sh
+   sudo ./setup-server.sh
    ```
 
-3. (Optional) Add password protection:
+4. Upload your dashboard:
    ```bash
-   apt install -y apache2-utils
-   htpasswd -cb /etc/nginx/.htpasswd sentinel YOUR_PASSWORD
+   # Copy index.html to server (from your local machine)
+   scp index.html root@YOUR_SERVER_IP:/var/www/sentinel/
    ```
+
+5. Edit index.html on the server to set your n8n URLs:
+   ```bash
+   nano /var/www/sentinel/index.html
+   # Update API_URL and RETELL_TOKEN_URL
+   ```
+
+#### Manual Setup
+
+<details>
+<summary>Click to expand manual setup steps</summary>
+
+```bash
+# Update system
+apt update && apt upgrade -y
+
+# Install nginx and certbot
+apt install -y nginx certbot python3-certbot-nginx apache2-utils
+
+# Create web directory
+mkdir -p /var/www/sentinel
+chown -R www-data:www-data /var/www/sentinel
+
+# Create nginx config
+cat > /etc/nginx/sites-available/sentinel << 'EOF'
+server {
+    listen 80;
+    server_name YOUR_DOMAIN;
+
+    root /var/www/sentinel;
+    index index.html;
+
+    location / {
+        auth_basic "SENTINEL Access";
+        auth_basic_user_file /etc/nginx/.htpasswd;
+        try_files $uri $uri/ /index.html;
+    }
+}
+EOF
+
+# Enable site
+ln -sf /etc/nginx/sites-available/sentinel /etc/nginx/sites-enabled/
+rm -f /etc/nginx/sites-enabled/default
+
+# Create password
+htpasswd -cb /etc/nginx/.htpasswd sentinel YOUR_PASSWORD
+
+# Test and reload
+nginx -t
+systemctl reload nginx
+
+# Get SSL certificate
+certbot --nginx -d YOUR_DOMAIN
+```
+
+</details>
 
 ## Retell AI Agent Configuration
 
@@ -247,6 +317,7 @@ By default, alerts scoring below 20 are filtered out. Edit "Filter Min Score 20"
 | `SENTINEL.json` | Core threat intel workflow (required) |
 | `SENTINEL_Voice_Query_API.json` | Voice query addon (optional) |
 | `index.html` | Dashboard frontend (optional) |
+| `setup-server.sh` | VPS setup script for dashboard hosting |
 | `README.md` | This file |
 
 ## Estimated Costs
@@ -257,9 +328,13 @@ By default, alerts scoring below 20 are filtered out. Edit "Filter Min Score 20"
 | Baserow | Free tier |
 | Discord | Free |
 | NVD API | Free |
+| DuckDNS | Free |
+| Let's Encrypt SSL | Free |
 | OpenAI | ~$1-5/mo (daily digest only) |
 | Retell AI | ~$0.10-0.15/min of voice |
-| Hosting | ~$5/mo (Linode Nanode) |
+| VPS Hosting | ~$4-5/mo (Linode Nanode / DO Droplet) |
+
+**Total: ~$5-25/month** depending on voice usage
 
 ## Troubleshooting
 
@@ -280,12 +355,49 @@ By default, alerts scoring below 20 are filtered out. Edit "Filter Min Score 20"
 - "Today" means last 24 hours, not calendar day
 - Check timezone settings in dashboard API
 
+### Voice button shows "Microphone access denied"
+- Dashboard MUST be served over HTTPS (not HTTP)
+- Check browser permissions for microphone
+
+### SSL certificate issues
+```bash
+# Check certificate status
+certbot certificates
+
+# Renew manually if needed
+certbot renew
+
+# Test auto-renewal
+certbot renew --dry-run
+```
+
 ## Security Recommendations
 
 1. **Use HTTPS** - Required for voice/microphone access
-2. **Add authentication** - Basic auth or Cloudflare Access
-3. **Install fail2ban** - Prevents brute force attacks
-4. **Restrict CORS** - Update `Access-Control-Allow-Origin` headers
+2. **Add password protection** - Included in setup script
+3. **Install fail2ban** - Blocks brute force attacks (included in setup script)
+4. **Enable firewall** - Only allow SSH and HTTPS (included in setup script)
+5. **Restrict CORS** - Update `Access-Control-Allow-Origin` headers in n8n
+
+## Server Management
+
+```bash
+# Change dashboard password
+htpasswd -b /etc/nginx/.htpasswd sentinel NEW_PASSWORD
+
+# Add another user
+htpasswd -b /etc/nginx/.htpasswd username password
+
+# View nginx logs
+tail -f /var/log/nginx/access.log
+tail -f /var/log/nginx/error.log
+
+# Check fail2ban status
+fail2ban-client status nginx-http-auth
+
+# Unban an IP
+fail2ban-client set nginx-http-auth unbanip IP_ADDRESS
+```
 
 ## License
 
@@ -301,3 +413,5 @@ Built with:
 - [OpenAI](https://openai.com/) - AI summaries
 - [NVD](https://nvd.nist.gov/) - CVE data
 - [FIRST EPSS](https://www.first.org/epss/) - Exploit probability
+- [DuckDNS](https://www.duckdns.org/) - Free dynamic DNS
+- [Let's Encrypt](https://letsencrypt.org/) - Free SSL certificates
