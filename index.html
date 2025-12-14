@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SENTINEL - Threat Intelligence Dashboard</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2306b6d4' stroke-width='2'><path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/></svg>">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0a0a0f; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.3); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0,212,255,0.5); }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <!-- Load Retell SDK as ES Module -->
+  <script type="module">
+    import { RetellWebClient } from 'https://esm.run/retell-client-js-sdk@2.0.7';
+    window.RetellWebClient = RetellWebClient;
+    window.dispatchEvent(new Event('retell-ready'));
+  </script>
+  
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // ========== CONFIGURATION ==========
+    const API_URL = 'https://YOUR_N8N_URL/webhook/sentinel-dashboard';
+    const RETELL_TOKEN_URL = 'https://YOUR_N8N_URL/webhook/sentinel-retell-token';
+    const REFRESH_INTERVAL = 60000;
+    // ===================================
+
+    const LoadingSpinner = () => (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#0a0a0f', color: 'white' }}>
+        <div style={{
+          width: '48px', height: '48px', border: '3px solid rgba(6,182,212,0.2)',
+          borderTop: '3px solid #06b6d4', borderRadius: '50%',
+          animation: 'spin 1s linear infinite'
+        }} />
+        <p style={{ marginTop: '16px', color: '#6b7280', fontSize: '14px' }}>Loading threat intelligence...</p>
+      </div>
+    );
+
+    const ErrorState = ({ error, onRetry }) => (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#0a0a0f', color: 'white' }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+        <h2 style={{ color: '#ff6600', marginBottom: '8px' }}>Connection Error</h2>
+        <p style={{ color: '#6b7280', marginBottom: '24px', textAlign: 'center', maxWidth: '400px' }}>{error}</p>
+        <button onClick={onRetry} style={{
+          padding: '10px 24px', background: '#06b6d4', color: '#000', border: 'none',
+          borderRadius: '8px', fontWeight: '500', cursor: 'pointer'
+        }}>Retry Connection</button>
+      </div>
+    );
+
+    const ThreatGauge = ({ score, level }) => {
+      const circumference = 2 * Math.PI * 85;
+      const offset = circumference - (score / 100) * circumference;
+      
+      const getColor = () => {
+        if (score >= 80) return '#ff0040';
+        if (score >= 60) return '#ff6600';
+        if (score >= 40) return '#ffcc00';
+        return '#00ff88';
+      };
+
+      return (
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <svg width="200" height="200" style={{ transform: 'rotate(-90deg)' }}>
+            <defs>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+            <circle cx="100" cy="100" r="85" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="12" />
+            <circle
+              cx="100" cy="100" r="85" fill="none"
+              stroke={getColor()}
+              strokeWidth="12"
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={offset}
+              filter="url(#glow)"
+              style={{ transition: 'stroke-dashoffset 1s ease-out, stroke 0.5s ease' }}
+            />
+          </svg>
+          <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <span style={{ fontSize: '48px', fontWeight: 'bold', color: getColor(), textShadow: `0 0 30px ${getColor()}` }}>
+              {score}
+            </span>
+            <span style={{ fontSize: '10px', color: '#9ca3af', letterSpacing: '0.1em', marginTop: '4px' }}>THREAT SCORE</span>
+            <span style={{ 
+              fontSize: '14px', fontWeight: 'bold', letterSpacing: '0.1em', marginTop: '8px',
+              padding: '4px 12px', borderRadius: '4px',
+              color: getColor(),
+              background: `${getColor()}15`,
+              border: `1px solid ${getColor()}40`,
+              textShadow: `0 0 10px ${getColor()}`
+            }}>
+              {level}
+            </span>
+          </div>
+        </div>
+      );
+    };
+
+    const StatCard = ({ label, value, color, icon, pulse }) => (
+      <div style={{
+        position: 'relative', overflow: 'hidden',
+        background: 'linear-gradient(135deg, rgba(17,24,39,0.8), rgba(3,7,18,0.8))',
+        border: '1px solid rgba(55,65,81,0.5)',
+        borderRadius: '8px', padding: '16px',
+        backdropFilter: 'blur(8px)'
+      }}>
+        {pulse && (
+          <div style={{ position: 'absolute', top: '8px', right: '8px' }}>
+            <span style={{
+              display: 'inline-block', width: '8px', height: '8px',
+              borderRadius: '50%', backgroundColor: color,
+              animation: 'pulse 2s infinite'
+            }} />
+          </div>
+        )}
+        <div style={{ fontSize: '11px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
+          <span style={{ marginRight: '6px' }}>{icon}</span>
+          {label}
+        </div>
+        <div style={{ fontSize: '28px', fontWeight: 'bold', color, textShadow: `0 0 20px ${color}40` }}>
+          {value}
+        </div>
+      </div>
+    );
+
+    const AlertFeed = ({ alerts }) => {
+      const getPriorityStyle = (priority) => {
+        const styles = {
+          CRITICAL: { color: '#ff0040', bg: 'rgba(255,0,64,0.1)', border: 'rgba(255,0,64,0.3)' },
+          HIGH: { color: '#ff6600', bg: 'rgba(255,102,0,0.1)', border: 'rgba(255,102,0,0.3)' },
+          MEDIUM: { color: '#ffcc00', bg: 'rgba(255,204,0,0.1)', border: 'rgba(255,204,0,0.3)' },
+          LOW: { color: '#00ff88', bg: 'rgba(0,255,136,0.1)', border: 'rgba(0,255,136,0.3)' }
+        };
+        return styles[priority] || styles.MEDIUM;
+      };
+
+      const timeAgo = (timestamp) => {
+        const seconds = Math.floor((Date.now() - new Date(timestamp)) / 1000);
+        if (seconds < 60) return `${seconds}s ago`;
+        if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+        if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+        return `${Math.floor(seconds / 86400)}d ago`;
+      };
+
+      if (!alerts || alerts.length === 0) {
+        return <div style={{ color: '#6b7280', textAlign: 'center', padding: '20px' }}>No recent alerts</div>;
+      }
+
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '420px', overflowY: 'auto', paddingRight: '8px' }}>
+          {alerts.map((alert, index) => {
+            const style = getPriorityStyle(alert.priority);
+            return (
+              <div key={alert.id || index} style={{ 
+                position: 'relative', padding: '12px', borderRadius: '8px',
+                background: style.bg, border: `1px solid ${style.border}`,
+                cursor: 'pointer', transition: 'transform 0.2s'
+              }}>
+                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px', borderRadius: '8px 0 0 8px', backgroundColor: style.color }} />
+                <div style={{ marginLeft: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px', color: style.color, background: `${style.color}20` }}>
+                      {alert.priority}
+                    </span>
+                    <span style={{ fontSize: '10px', color: '#6b7280' }}>{alert.source}</span>
+                    <span style={{ fontSize: '10px', color: '#6b7280', marginLeft: 'auto' }}>{timeAgo(alert.timestamp)}</span>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#e5e7eb', lineHeight: '1.4', margin: 0 }}>
+                    {alert.title}
+                  </p>
+                  {alert.cves && alert.cves.length > 0 && (
+                    <div style={{ display: 'flex', gap: '4px', marginTop: '6px', flexWrap: 'wrap' }}>
+                      {alert.cves.map(cve => (
+                        <span key={cve} style={{ fontSize: '10px', padding: '2px 6px', background: 'rgba(6,182,212,0.2)', color: '#22d3ee', borderRadius: '4px', fontFamily: 'monospace' }}>
+                          {cve}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    };
+
+    const ActivityChart = ({ data }) => {
+      if (!data || data.length === 0) {
+        return <div style={{ height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>No activity data</div>;
+      }
+
+      const maxCount = Math.max(...data.map(d => d.count), 1);
+      
+      return (
+        <div style={{ height: '120px', display: 'flex', alignItems: 'flex-end', gap: '2px' }}>
+          {data.map((item, idx) => (
+            <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div
+                style={{
+                  width: '100%', maxWidth: '10px', borderRadius: '2px 2px 0 0',
+                  height: `${Math.max((item.count / maxCount) * 100, 4)}px`,
+                  background: item.count > 5 ? 'linear-gradient(to top, #ff6600, #ff0040)' : 
+                             item.count > 2 ? 'linear-gradient(to top, #00d4ff, #0088ff)' : 
+                             'linear-gradient(to top, #334155, #475569)',
+                  boxShadow: item.count > 5 ? '0 0 10px rgba(255,102,0,0.5)' : 'none',
+                  opacity: 0.85,
+                  transition: 'height 0.3s ease'
+                }}
+              />
+              {idx % 6 === 0 && (
+                <span style={{ fontSize: '9px', color: '#4b5563', marginTop: '4px' }}>{item.label}</span>
+              )}
+            </div>
+          ))}
+        </div>
+      );
+    };
+
+    const SourceBreakdown = ({ sources }) => {
+      if (!sources || sources.length === 0) {
+        return <div style={{ color: '#6b7280', textAlign: 'center', padding: '20px' }}>No source data</div>;
+      }
+
+      const maxCount = Math.max(...sources.map(s => s.count));
+      const colors = ['#00d4ff', '#00ff88', '#ffcc00', '#ff6600', '#ff0040', '#aa00ff', '#00ffaa'];
+      
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {sources.map((source, idx) => (
+            <div key={source.name}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                <span style={{ color: '#9ca3af' }}>{source.name}</span>
+                <span style={{ color: '#6b7280', fontFamily: 'monospace' }}>{source.count}</span>
+              </div>
+              <div style={{ height: '6px', background: 'rgba(55,65,81,0.5)', borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', borderRadius: '3px',
+                  width: `${(source.count / maxCount) * 100}%`,
+                  background: `linear-gradient(90deg, ${colors[idx % colors.length]}80, ${colors[idx % colors.length]})`,
+                  boxShadow: `0 0 10px ${colors[idx % colors.length]}40`,
+                  transition: 'width 0.5s ease-out'
+                }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    };
+
+    const VoiceButton = ({ onClick, isActive, isConnecting, sdkReady }) => (
+      <button
+        onClick={onClick}
+        disabled={isConnecting || !sdkReady}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '10px',
+          padding: '10px 20px', borderRadius: '10px',
+          fontWeight: '500', cursor: (isConnecting || !sdkReady) ? 'wait' : 'pointer',
+          transition: 'all 0.3s',
+          background: isActive ? '#06b6d4' : (isConnecting || !sdkReady) ? '#374151' : 'rgba(55,65,81,0.5)',
+          color: isActive ? '#000' : '#22d3ee',
+          border: isActive ? 'none' : '1px solid rgba(6,182,212,0.3)',
+          boxShadow: isActive ? '0 0 20px rgba(6,182,212,0.4)' : 'none',
+          opacity: (isConnecting || !sdkReady) ? 0.7 : 1
+        }}
+      >
+        {isActive ? (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'pulse 1s infinite' }}>
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+            <line x1="12" y1="19" x2="12" y2="23" />
+            <line x1="8" y1="23" x2="16" y2="23" />
+          </svg>
+        ) : (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+            <line x1="12" y1="19" x2="12" y2="23" />
+            <line x1="8" y1="23" x2="16" y2="23" />
+          </svg>
+        )}
+        <span>{!sdkReady ? 'Loading...' : isConnecting ? 'Connecting...' : isActive ? 'End Call' : 'Voice Query'}</span>
+      </button>
+    );
+
+    function SentinelDashboard() {
+      const [data, setData] = useState(null);
+      const [isVoiceActive, setIsVoiceActive] = useState(false);
+      const [isConnecting, setIsConnecting] = useState(false);
+      const [sdkReady, setSdkReady] = useState(false);
+      const [currentTime, setCurrentTime] = useState(new Date());
+      const [isLoading, setIsLoading] = useState(true);
+      const [error, setError] = useState(null);
+      const retellClientRef = useRef(null);
+
+      // Wait for Retell SDK to load
+      useEffect(() => {
+        const initRetell = () => {
+          if (window.RetellWebClient) {
+            console.log('Retell SDK loaded, initializing client...');
+            retellClientRef.current = new window.RetellWebClient();
+            
+            retellClientRef.current.on('call_started', () => {
+              console.log('Call started');
+              setIsVoiceActive(true);
+              setIsConnecting(false);
+            });
+
+            retellClientRef.current.on('call_ended', () => {
+              console.log('Call ended');
+              setIsVoiceActive(false);
+              setIsConnecting(false);
+            });
+
+            retellClientRef.current.on('agent_start_talking', () => {
+              console.log('Agent speaking...');
+            });
+
+            retellClientRef.current.on('agent_stop_talking', () => {
+              console.log('Agent stopped speaking');
+            });
+
+            retellClientRef.current.on('error', (error) => {
+              console.error('Retell error:', error);
+              setIsVoiceActive(false);
+              setIsConnecting(false);
+            });
+
+            setSdkReady(true);
+          }
+        };
+
+        // Check if already loaded
+        if (window.RetellWebClient) {
+          initRetell();
+        } else {
+          // Wait for retell-ready event
+          window.addEventListener('retell-ready', initRetell);
+          return () => window.removeEventListener('retell-ready', initRetell);
+        }
+      }, []);
+
+      const handleVoiceClick = async () => {
+        if (!retellClientRef.current) {
+          alert('Voice SDK not ready yet. Please wait a moment and try again.');
+          return;
+        }
+
+        if (isVoiceActive) {
+          retellClientRef.current.stopCall();
+          setIsVoiceActive(false);
+        } else {
+          setIsConnecting(true);
+          
+          try {
+            // FIRST: Request microphone permission explicitly
+            console.log('Requesting microphone permission...');
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            console.log('Microphone permission granted');
+            
+            // Stop the stream immediately - Retell will create its own
+            stream.getTracks().forEach(track => track.stop());
+            
+            // Now get access token from n8n endpoint
+            console.log('Fetching Retell access token...');
+            const tokenResponse = await fetch(RETELL_TOKEN_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (!tokenResponse.ok) {
+              throw new Error(`Token request failed: ${tokenResponse.status}`);
+            }
+            
+            const tokenData = await tokenResponse.json();
+            console.log('Token response:', tokenData);
+            
+            if (!tokenData.success || !tokenData.access_token) {
+              throw new Error(tokenData.error || 'Failed to get access token');
+            }
+
+            console.log('Starting call with access token...');
+            
+            // Now start the call with the access token
+            await retellClientRef.current.startCall({
+              accessToken: tokenData.access_token,
+              sampleRate: 24000,
+              captureDeviceId: 'default',
+              playbackDeviceId: 'default'
+            });
+          } catch (err) {
+            console.error('Failed to start call:', err);
+            setIsConnecting(false);
+            
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+              alert('Microphone access denied. Please allow microphone access and try again.');
+            } else if (err.name === 'NotFoundError') {
+              alert('No microphone found. Please connect a microphone and try again.');
+            } else {
+              alert('Failed to start voice call: ' + (err.message || 'Unknown error'));
+            }
+          }
+        }
+      };
+
+      // Fetch data from API
+      const fetchData = async () => {
+        try {
+          const response = await fetch(API_URL);
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: Failed to fetch data`);
+          }
+          const newData = await response.json();
+          setData(newData);
+          setError(null);
+          setIsLoading(false);
+        } catch (err) {
+          console.error('API Error:', err);
+          setError(err.message || 'Failed to connect to SENTINEL API');
+          setIsLoading(false);
+        }
+      };
+
+      useEffect(() => {
+        fetchData();
+        const dataInterval = setInterval(fetchData, REFRESH_INTERVAL);
+        return () => clearInterval(dataInterval);
+      }, []);
+
+      useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        return () => clearInterval(timer);
+      }, []);
+
+      if (isLoading) {
+        return <LoadingSpinner />;
+      }
+
+      if (error && !data) {
+        return <ErrorState error={error} onRetry={fetchData} />;
+      }
+
+      if (!data) {
+        return <LoadingSpinner />;
+      }
+
+      const cardStyle = {
+        background: 'linear-gradient(135deg, rgba(17,24,39,0.9), rgba(3,7,18,0.9))',
+        border: '1px solid rgba(55,65,81,0.5)',
+        borderRadius: '16px',
+        padding: '20px',
+        backdropFilter: 'blur(8px)'
+      };
+
+      return (
+        <div style={{
+          minHeight: '100vh',
+          background: '#0a0a0f',
+          color: 'white',
+          position: 'relative',
+          overflow: 'hidden',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+        }}>
+          <div style={{
+            position: 'fixed', inset: 0,
+            background: 'radial-gradient(ellipse at top, rgba(8,145,178,0.15), transparent 50%)',
+            pointerEvents: 'none'
+          }} />
+          
+          <div style={{
+            position: 'fixed', inset: 0, pointerEvents: 'none', opacity: 0.03,
+            backgroundImage: 'linear-gradient(rgba(0,212,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.5) 1px, transparent 1px)',
+            backgroundSize: '50px 50px'
+          }} />
+
+          <div style={{ position: 'relative', zIndex: 10, padding: '24px', maxWidth: '1600px', margin: '0 auto' }}>
+            <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ position: 'relative' }}>
+                  <div style={{
+                    width: '48px', height: '48px', borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #06b6d4, #2563eb)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: '0 0 20px rgba(6,182,212,0.4)'
+                  }}>
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                  </div>
+                  <div style={{
+                    position: 'absolute', bottom: '-2px', right: '-2px',
+                    width: '14px', height: '14px', background: '#22c55e',
+                    borderRadius: '50%', border: '2px solid #0a0a0f'
+                  }} />
+                </div>
+                <div>
+                  <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>
+                    <span style={{ background: 'linear-gradient(90deg, #22d3ee, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                      SENTINEL
+                    </span>
+                  </h1>
+                  <p style={{ fontSize: '10px', color: '#6b7280', letterSpacing: '0.15em', margin: 0 }}>THREAT INTELLIGENCE PLATFORM</p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
+                <VoiceButton onClick={handleVoiceClick} isActive={isVoiceActive} isConnecting={isConnecting} sdkReady={sdkReady} />
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '24px', fontFamily: 'monospace', color: '#22d3ee', textShadow: '0 0 10px rgba(0,212,255,0.5)' }}>
+                    {currentTime.toLocaleTimeString('en-US', { hour12: false })}
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#6b7280' }}>
+                    {currentTime.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                  </div>
+                </div>
+              </div>
+            </header>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+              <div style={cardStyle}>
+                <h2 style={{ fontSize: '11px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#06b6d4' }} />
+                  Threat Level
+                </h2>
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0' }}>
+                  <ThreatGauge score={data.threatScore || 0} level={data.threatLevel || 'UNKNOWN'} />
+                </div>
+                <div style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <div style={{ textAlign: 'center', padding: '12px', background: 'rgba(55,65,81,0.3)', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#22d3ee' }}>{data.stats?.today || 0}</div>
+                    <div style={{ fontSize: '10px', color: '#6b7280', textTransform: 'uppercase' }}>Today</div>
+                  </div>
+                  <div style={{ textAlign: 'center', padding: '12px', background: 'rgba(55,65,81,0.3)', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#9ca3af' }}>{data.stats?.total || 0}</div>
+                    <div style={{ fontSize: '10px', color: '#6b7280', textTransform: 'uppercase' }}>This Week</div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', gridColumn: 'span 1' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                  <StatCard label="Critical" value={data.stats?.critical || 0} color="#ff0040" icon="🔴" pulse={(data.stats?.critical || 0) > 0} />
+                  <StatCard label="High" value={data.stats?.high || 0} color="#ff6600" icon="🟠" pulse={(data.stats?.high || 0) > 5} />
+                  <StatCard label="Medium" value={data.stats?.medium || 0} color="#ffcc00" icon="🟡" />
+                  <StatCard label="Low" value={data.stats?.low || 0} color="#00ff88" icon="🟢" />
+                </div>
+
+                <div style={cardStyle}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+                    <h2 style={{ fontSize: '11px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6' }} />
+                      24-Hour Activity
+                    </h2>
+                    <span style={{ fontSize: '10px', color: '#4b5563' }}>Updated {data.lastUpdated ? new Date(data.lastUpdated).toLocaleTimeString() : 'N/A'}</span>
+                  </div>
+                  <ActivityChart data={data.hourlyTrend || []} />
+                </div>
+
+                <div style={cardStyle}>
+                  <h2 style={{ fontSize: '11px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#a855f7' }} />
+                    Source Distribution
+                  </h2>
+                  <SourceBreakdown sources={data.sourceBreakdown || []} />
+                </div>
+              </div>
+
+              <div style={cardStyle}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h2 style={{ fontSize: '11px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444' }} />
+                    Live Alert Feed
+                  </h2>
+                  <span style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(6,182,212,0.2)', color: '#22d3ee', borderRadius: '10px' }}>
+                    {data.alertFeed?.length || 0} alerts
+                  </span>
+                </div>
+                <AlertFeed alerts={data.alertFeed || []} />
+              </div>
+            </div>
+
+            <footer style={{ marginTop: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: '#4b5563', flexWrap: 'wrap', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e' }} />
+                  System Online
+                </span>
+                <span>20+ Sources Active</span>
+                <span>Last sync: {data.lastUpdated ? new Date(data.lastUpdated).toLocaleTimeString() : 'N/A'}</span>
+              </div>
+              <div>
+                <span style={{ color: '#374151' }}>Powered by </span>
+                <span style={{ color: '#06b6d4', fontWeight: '500' }}>n8n + OpenAI</span>
+              </div>
+            </footer>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<SentinelDashboard />);
+  </script>
+</body>
+</html>
