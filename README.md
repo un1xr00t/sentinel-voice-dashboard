@@ -2,8 +2,7 @@
 
 A comprehensive threat intelligence platform that aggregates 20+ security feeds, enriches with CVE/EPSS data, delivers prioritized Discord alerts, and includes optional voice query and real-time dashboard addons.
 
-<img width="2514" height="1536" alt="image" src="https://github.com/user-attachments/assets/b1975572-46dc-4a8d-b10f-67f3037061d5" />
-
+![Dashboard Preview](docs/dashboard-preview.png)
 
 ## Features
 
@@ -139,7 +138,7 @@ Copy the webhook URLs.
    # Download setup script
    wget https://raw.githubusercontent.com/un1xr00t/sentinel-threat-intel/main/setup-server.sh
    
-   # Edit configuration (set your domain and password)
+   # Edit configuration (set your domain)
    nano setup-server.sh
    
    # Run setup
@@ -169,7 +168,7 @@ Copy the webhook URLs.
 apt update && apt upgrade -y
 
 # Install nginx and certbot
-apt install -y nginx certbot python3-certbot-nginx apache2-utils
+apt install -y nginx certbot python3-certbot-nginx
 
 # Create web directory
 mkdir -p /var/www/sentinel
@@ -185,8 +184,6 @@ server {
     index index.html;
 
     location / {
-        auth_basic "SENTINEL Access";
-        auth_basic_user_file /etc/nginx/.htpasswd;
         try_files $uri $uri/ /index.html;
     }
 }
@@ -195,9 +192,6 @@ EOF
 # Enable site
 ln -sf /etc/nginx/sites-available/sentinel /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
-
-# Create password
-htpasswd -cb /etc/nginx/.htpasswd sentinel YOUR_PASSWORD
 
 # Test and reload
 nginx -t
@@ -241,9 +235,35 @@ Create a new agent in [Retell AI Dashboard](https://dashboard.retellai.com/) wit
 
 **System Prompt:**
 ```
-You are SENTINEL, a cybersecurity threat intelligence analyst. For ANY question about threats, alerts, CVEs, or security status, call the query_threat_intel function first. Never make up data.
+You are SENTINEL, an AI-powered cybersecurity threat intelligence analyst. You provide voice briefings on security threats, vulnerabilities, and incidents.
 
-Style: Professional, concise, direct. Say CVE as "C-V-E" followed by the number.
+CRITICAL: For ANY question about threats, alerts, CVEs, vulnerabilities, security status, or threat levels, you MUST call the query_threat_intel function FIRST. Never make up or estimate threat data - always query the database.
+
+When to call query_threat_intel:
+- "What's the threat level?" → call function
+- "Any critical alerts?" → call function  
+- "Tell me about CVE-..." → call function
+- "What happened today/this week?" → call function
+- "Any Microsoft/Cisco/etc vulnerabilities?" → call function
+- "Ransomware activity?" → call function
+- "Brief me" or "Give me a summary" → call function
+- "How many threats?" → call function
+- ANY question mentioning security, threats, vulnerabilities, or CVEs → call function
+
+Your style:
+- Professional but approachable, like a trusted security colleague
+- Concise and direct - analysts are busy
+- Calm authority, even for critical threats
+- Prioritize actionable info over jargon
+
+Rules:
+- Start directly with information, never say "Sure!", "Here's what I found", or "Let me check"
+- Say CVE as "C-V-E" followed by the number (e.g., "C-V-E 2025-55591")
+- Quantify when possible: "3 critical alerts" not "several"
+- Keep responses to 2-4 sentences unless asked for details
+- End with a brief recommendation when threat level is HIGH or CRITICAL
+
+You have access to real-time threat intelligence from 20+ sources including CISA, US-CERT, Microsoft MSRC, Google Project Zero, and major security research firms.
 ```
 
 ## Feed Schedule
@@ -375,29 +395,28 @@ certbot renew --dry-run
 ## Security Recommendations
 
 1. **Use HTTPS** - Required for voice/microphone access
-2. **Add password protection** - Included in setup script
-3. **Install fail2ban** - Blocks brute force attacks (included in setup script)
-4. **Enable firewall** - Only allow SSH and HTTPS (included in setup script)
-5. **Restrict CORS** - Update `Access-Control-Allow-Origin` headers in n8n
+2. **Install fail2ban** - Blocks brute force attacks (included in setup script)
+3. **Enable firewall** - Only allow SSH and HTTPS (included in setup script)
+4. **Restrict CORS** - Update `Access-Control-Allow-Origin` headers in n8n
 
 ## Server Management
 
 ```bash
-# Change dashboard password
-htpasswd -b /etc/nginx/.htpasswd sentinel NEW_PASSWORD
-
-# Add another user
-htpasswd -b /etc/nginx/.htpasswd username password
-
 # View nginx logs
 tail -f /var/log/nginx/access.log
 tail -f /var/log/nginx/error.log
 
 # Check fail2ban status
-fail2ban-client status nginx-http-auth
+fail2ban-client status sshd
 
 # Unban an IP
-fail2ban-client set nginx-http-auth unbanip IP_ADDRESS
+fail2ban-client set sshd unbanip IP_ADDRESS
+
+# Restart nginx
+systemctl restart nginx
+
+# Check SSL certificate status
+certbot certificates
 ```
 
 ## License
